@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import os
 from dotenv import load_dotenv
+from datetime import date
 
 load_dotenv()
 api_key = os.environ["API_KEY"]
@@ -48,7 +49,7 @@ def generate_list_of_cities(state_selected,country_selected):
 #TODO: Include a select box for the options: ["By City, State, and Country","By Nearest City (IP Address)","By Latitude and Longitude"]
 # and save its selected option in a variable called category
 
-category = st.selectbox("Choose a category", options=["By City, State, and Country","By Nearest City (IP Address)","By Latitude and Longitude"])
+category = st.sidebar.selectbox("Choose a category", options=["By City, State, and Country","By Nearest City (IP Address)","By Latitude and Longitude"])
 
 if category == "By City, State, and Country":
     countries_dict=generate_list_of_countries()
@@ -75,6 +76,13 @@ if category == "By City, State, and Country":
                 if state_selected:
                     # TODO: Generate the list of cities, and add a select box for the user to choose the city
                     cities_list_response = generate_list_of_cities(state_selected,country_selected)
+                    if cities_list_response["status"] == "success":
+                        cities_list=[]
+                        for i in cities_list_response["data"]:
+                            cities_list.append(i["city"])
+                        cities_list.insert(0,"")
+                        city_selected = st.selectbox("Select a city", options=
+                                                        cities_list)
 
                         if city_selected:
                             aqi_data_url = f"https://api.airvisual.com/v2/city?city={city_selected}&state={state_selected}&country={country_selected}&key={api_key}"
@@ -82,7 +90,12 @@ if category == "By City, State, and Country":
 
                             if aqi_data_dict["status"] == "success":
                                 # TODO: Display the weather and air quality data as shown in the video and description of the assignment
-                                
+                                map_creator(aqi_data_dict["data"]["location"]["coordinates"][1],aqi_data_dict["data"]["location"]["coordinates"][0])
+                                st.markdown(f'<span style="color:green;">Today is {date.today()}</span>', unsafe_allow_html=True) # little bit of html to change the color of the text
+                                st.info(f"Temprature in {city_selected} is {aqi_data_dict['data']['current']['weather']['tp']}°C/\
+                                        {round((aqi_data_dict['data']['current']['weather']['tp']*9/5)+32,1)}°F")
+                                st.info(f"Humidity is {aqi_data_dict['data']['current']['weather']['hu']}%")
+                                st.info(f"The air quality index is currently {aqi_data_dict['data']['current']['pollution']['aqius']}")
                             else:
                                 st.warning("No data available for this location.")
 
@@ -99,12 +112,19 @@ elif category == "By Nearest City (IP Address)":
 
     if aqi_data_dict["status"] == "success":
     # TODO: Display the weather and air quality data as shown in the video and description of the assignment
-
+        map_creator(aqi_data_dict["data"]["location"]["coordinates"][1],aqi_data_dict["data"]["location"]["coordinates"][0])
+        st.markdown(f'<span style="color:green;">Today is {date.today()}</span>', unsafe_allow_html=True)
+        st.info(f"Temprature in nearest city is {aqi_data_dict['data']['current']['weather']['tp']}°C/\
+                {round((aqi_data_dict['data']['current']['weather']['tp']*9/5)+32,1)}°F")
+        st.info(f"Humidity is {aqi_data_dict['data']['current']['weather']['hu']}%")
+        st.info(f"The air quality index is currently {aqi_data_dict['data']['current']['pollution']['aqius']}")
     else:
         st.warning("No data available for this location.")
 
 elif category == "By Latitude and Longitude":
     # TODO: Add two text input boxes for the user to enter the latitude and longitude information
+    latitude = st.text_input("Enter latitude, e.g. 25.758645300830207")
+    longitude = st.text_input("Enter longitude, e.g. -80.37558638862005")
 
     if latitude and longitude:
         url = f"https://api.airvisual.com/v2/nearest_city?lat={latitude}&lon={longitude}&key={api_key}"
@@ -112,6 +132,11 @@ elif category == "By Latitude and Longitude":
 
         if aqi_data_dict["status"] == "success":
         # TODO: Display the weather and air quality data as shown in the video and description of the assignment
-
+            map_creator(latitude=latitude,longitude=longitude)
+            st.markdown(f'<span style="color:green;">Today is {date.today()}</span>', unsafe_allow_html=True)
+            st.info(f"Temprature in nearest city is {aqi_data_dict['data']['current']['weather']['tp']}°C/\
+                    {round((aqi_data_dict['data']['current']['weather']['tp']*9/5)+32,1)}°F")
+            st.info(f"Humidity is {aqi_data_dict['data']['current']['weather']['hu']}%")
+            st.info(f"The air quality index is currently {aqi_data_dict['data']['current']['pollution']['aqius']}")
         else:
             st.warning("No data available for this location.")
